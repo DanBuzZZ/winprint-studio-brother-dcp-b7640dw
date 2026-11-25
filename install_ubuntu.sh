@@ -45,6 +45,7 @@ APT_PACKAGES=(
     python3-pyqt6
     python3-cairo
     python3-gi
+    python3-gi-cairo
     gir1.2-poppler-0.18
     python3-pil
 )

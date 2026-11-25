@@ -21,6 +21,7 @@ STATIC_FILES = (
     "LICENSE",
     "requirements.txt",
     "install_winprint.sh",
+    "install_ubuntu.sh",
     "Brother_B7640DW_WinPrint.ppd",
     "calibration_profiles.json",
     "scripts/build_portable_zip.py",

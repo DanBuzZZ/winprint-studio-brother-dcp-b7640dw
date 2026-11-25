@@ -22,6 +22,7 @@ TARGET_DIR="${HOME}/.local/share/winprint"
 BIN_DIR="${HOME}/.local/bin"
 SYSTEMD_DIR="${HOME}/.config/systemd/user"
 AUTOSTART_DIR="${HOME}/.config/autostart"
+APPS_DIR="${HOME}/.local/share/applications"
 
 echo "[1/5] Memeriksa dependensi sistem & Python..."
 missing_req=0
@@ -81,6 +82,10 @@ if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
         fi
     fi
     cp -f "${SRC_DIR}/install_winprint.sh" "${TARGET_DIR}/install_winprint.sh"
+    if [ -f "${SRC_DIR}/install_ubuntu.sh" ]; then
+        cp -f "${SRC_DIR}/install_ubuntu.sh" "${TARGET_DIR}/install_ubuntu.sh"
+        chmod +x "${TARGET_DIR}/install_ubuntu.sh"
+    fi
 fi
 
 chmod +x "${TARGET_DIR}/install_winprint.sh"
@@ -97,8 +102,21 @@ ln -sf "${TARGET_DIR}/modules/winprint_studio.py" "${BIN_DIR}/winprint-studio"
 ln -sf "${TARGET_DIR}/modules/winprint_tray.py" "${BIN_DIR}/winprint-tray"
 ln -sf "${TARGET_DIR}/modules/winprint_control_center.py" "${BIN_DIR}/winprint-control-center"
 
-echo "[4/5] Memasang layanan systemd --user & autostart tray..."
-mkdir -p "${SYSTEMD_DIR}" "${AUTOSTART_DIR}"
+echo "[4/5] Memasang layanan systemd --user, menu aplikasi & autostart tray..."
+mkdir -p "${SYSTEMD_DIR}" "${AUTOSTART_DIR}" "${APPS_DIR}"
+
+cat > "${APPS_DIR}/winprint-studio.desktop" <<EOF
+[Desktop Entry]
+Name=WinPrint Studio (Brother DCP-B7640DW / DCP-L2540DW)
+Comment=Cetak Presisi F4/A4, Auto-Duplex & Imposisi Vektor untuk Printer Brother
+Exec=${BIN_DIR}/winprint-studio %f
+Icon=printer
+Terminal=false
+Type=Application
+Categories=Office;Utility;Printing;
+MimeType=application/pdf;
+StartupNotify=true
+EOF
 
 cat > "${SYSTEMD_DIR}/winprint.service" <<'EOF'
 [Unit]

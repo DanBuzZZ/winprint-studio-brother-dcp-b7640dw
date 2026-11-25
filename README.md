@@ -36,7 +36,20 @@ Dirancang khusus untuk mengatasi kendala umum CUPS/PCL-XL pada ukuran kertas **F
 
 ---
 
-## Instalasi Cepat (User-Space, Tanpa Root)
+## Instalasi Cepat
+
+### Ubuntu / Debian / Linux Mint (Otomatis Pasang Paket APT)
+
+```bash
+git clone https://github.com/DanBuzZZ/winprint-studio-brother-dcp-b7640dw.git
+cd winprint-studio-brother-dcp-b7640dw
+chmod +x install_ubuntu.sh install_winprint.sh
+./install_ubuntu.sh --with-cups
+```
+
+Opsi `--with-cups` otomatis mendaftarkan antrean virtual `Brother_B7640DW_WinPrint` ke CUPS agar `Ctrl+P` dari OnlyOffice, LibreOffice, dan browser langsung membuka WinPrint Studio.
+
+### Distro Linux Lain (Arch / Fedora — User-Space Tanpa Root)
 
 ```bash
 git clone https://github.com/DanBuzZZ/winprint-studio-brother-dcp-b7640dw.git
@@ -44,9 +57,9 @@ cd winprint-studio-brother-dcp-b7640dw
 ./install_winprint.sh
 ```
 
-Skrip [install_winprint.sh](install_winprint.sh) akan memeriksa dependensi, menyalin modul ke `~/.local/share/winprint/`, menautkan perintah (`winprint-studio`, `winprint`, `winprint-tray`, `winprint-control-center`) ke `~/.local/bin/`, serta mengaktifkan layanan latar belakang `winprint.service` (`systemd --user`).
+Skrip [install_winprint.sh](install_winprint.sh) akan memeriksa dependensi, menyalin modul ke `~/.local/share/winprint/`, menautkan perintah (`winprint-studio`, `winprint`, `winprint-tray`, `winprint-control-center`) ke `~/.local/bin/`, membuat entri menu desktop, serta mengaktifkan layanan latar belakang `winprint.service` (`systemd --user`).
 
-### Opsional: Mengaktifkan Intersepsi `Ctrl+P` di CUPS
+### Opsional: Mendaftarkan Intersepsi `Ctrl+P` CUPS Secara Manual
 
 ```bash
 lpadmin -p Brother_B7640DW_WinPrint -E \

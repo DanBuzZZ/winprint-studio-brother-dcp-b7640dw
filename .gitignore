@@ -1,0 +1,21 @@
+# Python / bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Local runtime state & queues
+config.json
+config.json.tmp
+calibration_profiles.json.tmp
+spool.db
+spool.db-journal
+spool_files/
+test_logs/
+releases/
+check_icon.png
+*.tmp
+
+# Optional vendor-extracted PPD (kept local; repo ships Brother_B7640DW_WinPrint.ppd)
+BRPPB7640DW.PPD

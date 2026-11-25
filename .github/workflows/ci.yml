@@ -1,0 +1,48 @@
+name: WinPrint CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system and PDF vector dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ghostscript \
+            poppler-utils \
+            qpdf \
+            python3-gi \
+            gir1.2-poppler-0.18 \
+            python3-cairo \
+            python3-pyqt6 \
+            python3-pil \
+            libcairo2
+
+      - name: Syntax verification
+        run: |
+          python3 -m py_compile modules/*.py scripts/build_portable_zip.py
+          bash -n install_winprint.sh
+
+      - name: Run unit test suite
+        run: |
+          python3 -m unittest discover -s tests -p "test_*.py" -v
+
+      - name: Run offscreen Qt6 Studio smoke check
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'modules'); from PyQt6.QtWidgets import QApplication; import winprint_studio; app = QApplication([]); w = winprint_studio.WinPrintStudio(); s = w.collect_settings(); assert s['paper'] in ('F4', 'A4'); w.close()"
+
+      - name: Verify portable ZIP packager
+        run: |
+          python3 scripts/build_portable_zip.py
+          ls -lh releases/WinPrint_Studio_v2_Portable.zip*

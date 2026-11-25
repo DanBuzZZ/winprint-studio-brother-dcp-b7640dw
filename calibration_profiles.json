@@ -1,0 +1,73 @@
+{
+  "Brother DCP-B7640DW": {
+    "Folio": {
+      "LONG_EDGE": {
+        "offset_x_mm": 2.5,
+        "offset_y_mm": -3.8,
+        "notes": "Calibrated empirically via 3x2 sheet on rawtobr3 PCL (1038) 600 DPI; sheet 2 (+2.5mm, -3.2mm) left ~0.6mm high, tuned to -3.8mm."
+      },
+      "SHORT_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      }
+    },
+    "F4": {
+      "LONG_EDGE": {
+        "offset_x_mm": 2.5,
+        "offset_y_mm": -3.8,
+        "notes": "Alias of Folio (215x330mm / 8.5x13in)"
+      }
+    },
+    "A4": {
+      "LONG_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Pending physical A4 calibration"
+      },
+      "SHORT_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      }
+    }
+  },
+  "Brother DCP-L2540DW": {
+    "Folio": {
+      "LONG_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      },
+      "SHORT_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      }
+    },
+    "F4": {
+      "LONG_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Alias of Folio (215x330mm / 8.5x13in)"
+      },
+      "SHORT_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      }
+    },
+    "A4": {
+      "LONG_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      },
+      "SHORT_EDGE": {
+        "offset_x_mm": 0.0,
+        "offset_y_mm": 0.0,
+        "notes": "Uncalibrated default"
+      }
+    }
+  }
+}

@@ -38,16 +38,21 @@ Dirancang khusus untuk mengatasi kendala umum CUPS/PCL-XL pada ukuran kertas **F
 
 ## Instalasi Cepat
 
-### Ubuntu / Debian / Linux Mint (Otomatis Pasang Paket APT)
+### Ubuntu / Debian / Linux Mint (Paket Lengkap Siap Pakai)
 
 ```bash
 git clone https://github.com/DanBuzZZ/winprint-studio-brother-dcp-b7640dw.git
 cd winprint-studio-brother-dcp-b7640dw
-chmod +x install_ubuntu.sh install_winprint.sh
-./install_ubuntu.sh --with-cups
+./install_ubuntu.sh
 ```
 
-Opsi `--with-cups` otomatis mendaftarkan antrean virtual `Brother_B7640DW_WinPrint` ke CUPS agar `Ctrl+P` dari OnlyOffice, LibreOffice, dan browser langsung membuka WinPrint Studio.
+> **Jangan** jalankan dengan `sudo ./install_ubuntu.sh`. Jalankan sebagai user biasa; skrip akan meminta sandi `sudo` otomatis hanya saat memasang paket APT dan mengatur CUPS.
+
+Secara bawaan `install_ubuntu.sh` langsung:
+- Memasang paket sistem (`ghostscript`, `poppler-utils`, `qpdf`, `PyQt6`, `pycairo`, `python3-gi-cairo`).
+- Memasang filter PCL resmi **Brother `rawtobr3` (x86_64)** yang dibundel di `drivers/b7640dw/` agar **F4/Folio Auto-Duplex tidak bergeser 50,8 mm**.
+- Menyalin profil kalibrasi siap pakai (`+2.5 mm X, -3.8 mm Y`) serta `config.json` preset F4 Duplex.
+- Mendaftarkan `Brother_B7640DW_WinPrint` ke CUPS dan **menyetelnya sebagai Printer Default `Ctrl+P`**.
 
 ### Distro Linux Lain (Arch / Fedora — User-Space Tanpa Root)
 

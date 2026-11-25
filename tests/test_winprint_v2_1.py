@@ -191,6 +191,27 @@ class TestWinPrintV21(unittest.TestCase):
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
+    def test_6_bundled_rawtobr3_fallback_for_portable_ubuntu(self):
+        with patch.object(winprint_engine_v2, "SYSTEM_RAWTOBR3_B7640", "/nonexistent/rawtobr3"):
+            with patch.dict(
+                winprint_engine_v2.BROTHER_DRIVER_SPECS["Brother DCP-B7640DW"],
+                {"rawtobr3": "/nonexistent/rawtobr3"},
+            ):
+                resolved = winprint_engine_v2.resolve_rawtobr3_path("Brother DCP-B7640DW")
+                self.assertTrue(resolved and os.path.isfile(resolved), f"Missing bundled rawtobr3: {resolved}")
+                res = winprint_engine_v2.render_job(
+                    input_pdf=self.src_2p,
+                    media="F4",
+                    duplex="LONG_EDGE",
+                    copies=1,
+                    geometry=self.geom_f4,
+                    backend="auto",
+                    printer_model="Brother DCP-B7640DW",
+                )
+                self.assertEqual(res["manifest"]["backend"], "brother_pcl")
+                self.assertIn(b"\x1b&l1038a", res["stream"])
+                self.assertIn(b"\x1b&l1S", res["stream"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

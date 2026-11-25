@@ -19,23 +19,38 @@ import tempfile
 from typing import Dict, Any, List, Optional, Tuple
 from winprint_layout import MediaGeometry, PT_PER_MM, normalize_pdf
 
-RAWTOBR3_PATH = "/opt/brother/Printers/DCPB7640DW/lpd/x86_64/rawtobr3"
+BUNDLED_RAWTOBR3_B7640 = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "drivers", "b7640dw", "rawtobr3")
+)
+SYSTEM_RAWTOBR3_B7640 = "/opt/brother/Printers/DCPB7640DW/lpd/x86_64/rawtobr3"
+RAWTOBR3_PATH = SYSTEM_RAWTOBR3_B7640 if os.path.isfile(SYSTEM_RAWTOBR3_B7640) else BUNDLED_RAWTOBR3_B7640
 DEFAULT_CALIBRATION_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "calibration_profiles.json")
 )
 
 BROTHER_DRIVER_SPECS = {
     "Brother DCP-B7640DW": {
-        "rawtobr3": "/opt/brother/Printers/DCPB7640DW/lpd/x86_64/rawtobr3",
+        "rawtobr3": SYSTEM_RAWTOBR3_B7640,
+        "bundled_rawtobr3": BUNDLED_RAWTOBR3_B7640,
         "rc_section": "DCPB7640DW",
         "flags": "0000000000000500",
     },
     "Brother DCP-L2540DW": {
         "rawtobr3": "/opt/brother/Printers/DCPL2540DW/lpd/rawtobr3",
+        "bundled_rawtobr3": "",
         "rc_section": "DCPL2540DW",
         "flags": "0000000000000000",
     },
 }
+
+
+def resolve_rawtobr3_path(printer_model: str = "Brother DCP-B7640DW") -> Optional[str]:
+    """Returns usable rawtobr3 binary path (system install first, then bundled 64-bit binary)."""
+    spec = BROTHER_DRIVER_SPECS.get(printer_model, BROTHER_DRIVER_SPECS["Brother DCP-B7640DW"])
+    for cand in (spec.get("rawtobr3"), spec.get("bundled_rawtobr3")):
+        if cand and os.path.isfile(cand):
+            return cand
+    return None
 
 PJL_PAPER_MAP = {
     "A4": "A4",
@@ -335,7 +350,9 @@ def render_pdf_to_brother_pcl(
     Returns (pjl_settings_and_pcl_body, pcl_settings_header_preview).
     """
     spec = BROTHER_DRIVER_SPECS.get(printer_model, BROTHER_DRIVER_SPECS["Brother DCP-B7640DW"])
-    rawtobr3_bin = spec["rawtobr3"]
+    rawtobr3_bin = resolve_rawtobr3_path(printer_model)
+    if not rawtobr3_bin:
+        raise FileNotFoundError(f"rawtobr3 filter binary not found for {printer_model}")
     br_paper, px_w, px_h = BROTHER_PCL_PAPERS.get(media, ("A4", 4961, 7016))
     rc_source = BROTHER_PAPER_SOURCES.get(str(paper_source).lower(), "AutoSelect")
     rc_media = BROTHER_MEDIA_TYPES.get(str(media_type).lower(), "PlainPaper")
@@ -454,7 +471,7 @@ def render_job(
     spec = BROTHER_DRIVER_SPECS.get(printer_model, BROTHER_DRIVER_SPECS["Brother DCP-B7640DW"])
     chosen_backend = backend
     if chosen_backend == "auto":
-        chosen_backend = "brother_pcl" if os.path.isfile(spec["rawtobr3"]) else "pclxl"
+        chosen_backend = "brother_pcl" if resolve_rawtobr3_path(printer_model) else "pclxl"
 
     prof_x_pt, prof_y_pt = load_calibration_offset(media, duplex_mode, printer_model=printer_model)
     eff_off_x = prof_x_pt if offset_x_pt is None else offset_x_pt

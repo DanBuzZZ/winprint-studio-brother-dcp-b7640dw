@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER}" != "root" ]; then
+    echo "Kesalahan: Jangan jalankan $0 dengan sudo. Jalankan sebagai user biasa: ./install_winprint.sh" >&2
+    exit 1
+fi
+
 FORCE_PROFILES=0
 for arg in "$@"; do
     case "$arg" in
@@ -48,6 +53,7 @@ if [ "$missing_req" -ne 0 ]; then
 fi
 
 for br_bin in \
+    "${SRC_DIR}/drivers/b7640dw/rawtobr3" \
     "/opt/brother/Printers/DCPB7640DW/lpd/x86_64/rawtobr3" \
     "/opt/brother/Printers/DCPL2540DW/lpd/rawtobr3"; do
     if [ -f "$br_bin" ]; then
@@ -58,10 +64,13 @@ for br_bin in \
 done
 
 echo "[2/5] Menyinkronkan berkas ke ${TARGET_DIR}..."
-mkdir -p "${TARGET_DIR}" "${TARGET_DIR}/modules" "${TARGET_DIR}/tests" "${TARGET_DIR}/scripts"
+mkdir -p "${TARGET_DIR}" "${TARGET_DIR}/modules" "${TARGET_DIR}/tests" "${TARGET_DIR}/scripts" "${TARGET_DIR}/drivers"
 
 if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
     cp -a "${SRC_DIR}/modules/." "${TARGET_DIR}/modules/"
+    if [ -d "${SRC_DIR}/drivers" ]; then
+        cp -a "${SRC_DIR}/drivers/." "${TARGET_DIR}/drivers/"
+    fi
     if [ -d "${SRC_DIR}/tests" ]; then
         cp -a "${SRC_DIR}/tests/." "${TARGET_DIR}/tests/"
     fi
@@ -88,7 +97,27 @@ if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
     fi
 fi
 
+if [ ! -f "${TARGET_DIR}/config.json" ]; then
+    cat > "${TARGET_DIR}/config.json" <<'EOF'
+{
+  "printer_ip": "",
+  "printer_name": "Brother-DCP-B7640DW",
+  "printer_model": "Brother DCP-B7640DW",
+  "default_paper": "F4",
+  "default_duplex": "long",
+  "default_toner_save": false,
+  "default_resolution": 600,
+  "auto_retry": true,
+  "intercept_to_studio": true
+}
+EOF
+    echo "  [OK] config.json awal dibuat dengan preset F4 Duplex & auto-discovery LAN"
+fi
+
 chmod +x "${TARGET_DIR}/install_winprint.sh"
+if [ -f "${TARGET_DIR}/drivers/b7640dw/rawtobr3" ]; then
+    chmod +x "${TARGET_DIR}/drivers/b7640dw/rawtobr3"
+fi
 for py_entry in winprint_cli.py winprint_studio.py winprint_tray.py winprint_control_center.py winprint_daemon.py winprint_ipp_server.py winprint_spooler.py winprint_engine.py; do
     if [ -f "${TARGET_DIR}/modules/${py_entry}" ]; then
         chmod +x "${TARGET_DIR}/modules/${py_entry}"

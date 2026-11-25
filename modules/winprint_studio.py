@@ -2478,9 +2478,13 @@ class WinPrintStudio(QMainWindow):
         status_col = color_map.get(pjl_state, "#94a3b8")
 
         if hasattr(self, "cb_printer_select"):
-            self.cb_printer_select.setToolTip(f"Model terdeteksi: {model} ({ip})")
+            raw_driver = winprint_engine_v2.resolve_rawtobr3_path(self.printer_model)
+            drv_tag = "PCL Native 1038" if raw_driver else "PCL-XL Fallback"
+            self.cb_printer_select.setToolTip(f"Model terdeteksi: {model} ({ip}) • Driver: {drv_tag}")
         if pjl_state in ("READY", "BUSY") or online:
-            self.lbl_conn_status.setText(f"{pjl_state} • {ip}:9100{tray_suffix}")
+            raw_driver = winprint_engine_v2.resolve_rawtobr3_path(self.printer_model)
+            drv_warn = "" if raw_driver else " • Mode PCL-XL"
+            self.lbl_conn_status.setText(f"{pjl_state} • {ip}:9100{tray_suffix}{drv_warn}")
             self.lbl_conn_status.setStyleSheet(f"font-size: 11px; font-weight: 500; color: {status_col};")
             self.lbl_oled_display.setText(f'[ "{lcd}" ]')
         elif pjl_state == "ERROR":

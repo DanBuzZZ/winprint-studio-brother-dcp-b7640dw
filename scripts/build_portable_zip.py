@@ -36,16 +36,22 @@ def collect_release_files(root_dir: str):
         if os.path.isfile(abs_p):
             entries.append((abs_p, rel))
 
-    for sub in ("modules", "tests"):
+    for sub in ("modules", "tests", "drivers"):
         sub_dir = os.path.join(root_dir, sub)
         if not os.path.isdir(sub_dir):
             continue
-        for fname in sorted(os.listdir(sub_dir)):
-            if not fname.endswith(".py") or fname.endswith(".pyc"):
+        for cur_root, _, filenames in os.walk(sub_dir):
+            if "__pycache__" in cur_root:
                 continue
-            abs_p = os.path.join(sub_dir, fname)
-            if os.path.isfile(abs_p):
-                entries.append((abs_p, f"{sub}/{fname}"))
+            for fname in sorted(filenames):
+                if fname.endswith(".pyc"):
+                    continue
+                if sub in ("modules", "tests") and not fname.endswith(".py"):
+                    continue
+                abs_p = os.path.join(cur_root, fname)
+                if os.path.isfile(abs_p):
+                    rel_p = os.path.relpath(abs_p, root_dir)
+                    entries.append((abs_p, rel_p))
     return entries
 
 
@@ -64,7 +70,7 @@ def build_archive(root_dir: str = ROOT_DIR, output_dir: str = RELEASE_DIR) -> tu
             arcname = f"{ARCHIVE_PREFIX}/{rel_p}"
             info = zipfile.ZipInfo.from_file(abs_p, arcname=arcname)
             mode = os.stat(abs_p).st_mode
-            if rel_p.endswith(".sh"):
+            if rel_p.endswith(".sh") or rel_p.endswith("rawtobr3"):
                 mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
             info.external_attr = (stat.S_IFMT(mode) | stat.S_IMODE(mode)) << 16
             with open(abs_p, "rb") as src:

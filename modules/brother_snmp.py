@@ -508,7 +508,7 @@ def resolve_printer_ip(
         except Exception:
             pass
 
-    # 3. Fast multithreaded probe on common DHCP range (.210 - .245)
+    # 3. Fast multithreaded probe across full LAN subnet (.2 - .254)
     subnet_prefix = "192.168.100."
     try:
         route_out = subprocess.check_output(["ip", "route"], stderr=subprocess.DEVNULL).decode("utf-8")
@@ -520,10 +520,10 @@ def resolve_printer_ip(
     except Exception:
         pass
 
-    probe_ips = [f"{subnet_prefix}{i}" for i in range(210, 245) if f"{subnet_prefix}{i}" not in other_model_ips]
+    probe_ips = [f"{subnet_prefix}{i}" for i in range(2, 255) if f"{subnet_prefix}{i}" not in other_model_ips]
     alive_ips = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_ip = {executor.submit(is_port_open, ip, 80, 0.4): ip for ip in probe_ips}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+        future_to_ip = {executor.submit(is_port_open, ip, 80, 0.35): ip for ip in probe_ips}
         for future in concurrent.futures.as_completed(future_to_ip):
             ip = future_to_ip[future]
             try:

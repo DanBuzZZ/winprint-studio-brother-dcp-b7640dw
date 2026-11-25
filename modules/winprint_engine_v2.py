@@ -27,6 +27,9 @@ RAWTOBR3_PATH = SYSTEM_RAWTOBR3_B7640 if os.path.isfile(SYSTEM_RAWTOBR3_B7640) e
 DEFAULT_CALIBRATION_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "calibration_profiles.json")
 )
+OFFICE_MANIFEST_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "office_manifest.json")
+)
 
 BROTHER_DRIVER_SPECS = {
     "Brother DCP-B7640DW": {
@@ -138,26 +141,61 @@ def normalize_duplex_mode(duplex: str) -> str:
     return "SIMPLEX"
 
 
+def _read_manifest_calibration(
+    media: str,
+    duplex_mode: str,
+    printer_model: str,
+    manifest_path: str = OFFICE_MANIFEST_PATH,
+) -> Optional[Tuple[float, float]]:
+    if not os.path.isfile(manifest_path):
+        return None
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        if not manifest.get("authoritative"):
+            return None
+        ov = manifest.get("calibration_overrides", {}).get(printer_model, {})
+        m_prof = ov.get(media)
+        if not m_prof and media in ("F4", "Folio"):
+            m_prof = ov.get("Folio" if media == "F4" else "F4")
+        entry = (m_prof or {}).get(duplex_mode)
+        if entry and ("offset_x_mm" in entry or "offset_y_mm" in entry):
+            return float(entry.get("offset_x_mm", 0.0)), float(entry.get("offset_y_mm", 0.0))
+    except Exception:
+        pass
+    return None
+
+
 def get_calibration_mm(
     media: str,
     duplex_mode: str,
     printer_model: str = "Brother DCP-B7640DW",
     profile_path: str = DEFAULT_CALIBRATION_PATH,
 ) -> Tuple[float, float]:
-    """Reads calibrated (offset_x_mm, offset_y_mm) from JSON profile."""
-    if duplex_mode == "SIMPLEX" or not os.path.isfile(profile_path):
+    """Reads calibrated (offset_x_mm, offset_y_mm) from JSON profile with authoritative fallback."""
+    if duplex_mode == "SIMPLEX":
         return 0.0, 0.0
-    try:
-        with open(profile_path, "r", encoding="utf-8") as f:
-            profiles = json.load(f)
-        model_prof = profiles.get(printer_model, {})
-        media_prof = model_prof.get(media)
-        if not media_prof and media in ("F4", "Folio"):
-            media_prof = model_prof.get("Folio" if media == "F4" else "F4", {})
-        entry = (media_prof or {}).get(duplex_mode, {})
-        return float(entry.get("offset_x_mm", 0.0)), float(entry.get("offset_y_mm", 0.0))
-    except Exception:
-        return 0.0, 0.0
+    if os.path.isfile(profile_path):
+        try:
+            with open(profile_path, "r", encoding="utf-8") as f:
+                profiles = json.load(f)
+            model_prof = profiles.get(printer_model, {})
+            media_prof = model_prof.get(media)
+            if not media_prof and media in ("F4", "Folio"):
+                media_prof = model_prof.get("Folio" if media == "F4" else "F4", {})
+            entry = (media_prof or {}).get(duplex_mode, {})
+            if entry:
+                x_mm = float(entry.get("offset_x_mm", 0.0))
+                y_mm = float(entry.get("offset_y_mm", 0.0))
+                # If entry looks uncalibrated (0.0, 0.0) and is not a deliberate UI neutral save, defer to authoritative manifest
+                if abs(x_mm) > 1e-4 or abs(y_mm) > 1e-4 or entry.get("notes") == "Saved from WinPrint Studio UI":
+                    return x_mm, y_mm
+        except Exception:
+            pass
+    auth = _read_manifest_calibration(media, duplex_mode, printer_model)
+    if auth is not None:
+        return auth
+    return 0.0, 0.0
 
 
 def save_calibration_mm(

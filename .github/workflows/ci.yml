@@ -32,17 +32,18 @@ jobs:
       - name: Syntax verification
         run: |
           python3 -m py_compile modules/*.py scripts/build_portable_zip.py
-          bash -n install_winprint.sh
+          bash -n install_winprint.sh install_ubuntu.sh
 
       - name: Run unit test suite
         run: |
           python3 -m unittest discover -s tests -p "test_*.py" -v
 
-      - name: Run offscreen Qt6 Studio smoke check
+      - name: Run offscreen Qt6 Studio smoke check & doctor
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          python3 -c "import sys; sys.path.insert(0, 'modules'); from PyQt6.QtWidgets import QApplication; import winprint_studio; app = QApplication([]); w = winprint_studio.WinPrintStudio(); s = w.collect_settings(); assert s['paper'] in ('F4', 'A4'); w.close()"
+          python3 -c "import sys; sys.path.insert(0, 'modules'); from PyQt6.QtWidgets import QApplication; import winprint_studio; app = QApplication([]); w = winprint_studio.WinPrintStudio(); s = w.collect_settings(); assert s['paper'] == 'F4', s; assert s['duplex'] == 'long', s; assert w.chk_safe_margin.isChecked() is True; assert s['fit_to_printable'] is True; w.close()"
+          python3 modules/winprint_cli.py doctor
 
       - name: Verify portable ZIP packager
         run: |

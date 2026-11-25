@@ -138,6 +138,67 @@ def cmd_daemon(args):
     winprint_daemon.main()
 
 
+def cmd_doctor(args):
+    """Runs offline self-diagnostics verifying zero-drift authoritative setup."""
+    import tempfile
+    import shutil
+    import subprocess
+    import winprint_engine_v2
+    import winprint_layout
+
+    base_dir = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+    cfg = winprint_spooler.get_config()
+    manifest = winprint_spooler.load_office_manifest()
+    raw_bin = winprint_engine_v2.resolve_rawtobr3_path(cfg.get("printer_model", "Brother DCP-B7640DW"))
+    ppd = winprint_engine.resolve_ppd_path()
+    geom_f4 = winprint_layout.get_media_geometry(ppd, "F4", "portrait")
+    off_x, off_y = winprint_engine_v2.get_calibration_mm("F4", "LONG_EDGE", cfg.get("printer_model", "Brother DCP-B7640DW"))
+
+    print("=== WinPrint Doctor (Zero-Drift Self-Check) ===")
+    print(f"Manifest Ver : {manifest.get('manifest_version', 'none')} (authoritative={manifest.get('authoritative', False)})")
+    print(f"Config       : model={cfg.get('printer_model')} paper={cfg.get('default_paper')} duplex={cfg.get('default_duplex')} safe_fit={cfg.get('safe_fit_to_printable')}")
+    print(f"PPD Active   : {ppd} (F4={geom_f4.width_pt}x{geom_f4.height_pt} pt)")
+    print(f"rawtobr3     : {raw_bin or 'MISSING'}")
+    print(f"Calib F4     : X={off_x:+.1f} mm, Y={off_y:+.1f} mm")
+
+    if shutil.which("systemctl"):
+        st = subprocess.run(["systemctl", "--user", "is-active", "winprint.service"], capture_output=True, text=True)
+        print(f"Service      : {st.stdout.strip() or 'inactive'}")
+    if shutil.which("lpstat"):
+        lp = subprocess.run(["lpstat", "-d"], capture_output=True, text=True)
+        print(f"CUPS Default : {lp.stdout.strip() or 'none'}")
+
+    fd, pdf_tmp = tempfile.mkstemp(suffix="_doctor.pdf")
+    os.close(fd)
+    ok = True
+    try:
+        winprint_layout.generate_calibration_pdf(pdf_tmp, geom_f4)
+        res = winprint_engine_v2.render_job(
+            input_pdf=pdf_tmp,
+            media="F4",
+            duplex="LONG_EDGE",
+            copies=1,
+            geometry=geom_f4,
+            fit_to_printable=bool(cfg.get("safe_fit_to_printable", True)),
+            backend="auto",
+            printer_model=cfg.get("printer_model", "Brother DCP-B7640DW"),
+        )
+        m = res["manifest"]
+        has_1038 = b"\x1b&l1038a" in res["stream"]
+        has_1s = b"\x1b&l1S" in res["stream"]
+        print(f"Dry-Run F4   : backend={m['backend']} bytes={m['total_bytes']} PCL1038={has_1038} Duplex1S={has_1s}")
+        if not raw_bin or m["backend"] != "brother_pcl" or not (has_1038 and has_1s):
+            ok = False
+        if abs(off_x - 2.5) > 0.05 or abs(off_y - (-3.8)) > 0.05:
+            print("[WARN] Offset kalibrasi F4 berbeda dari standar kantor (+2.5, -3.8 mm)")
+    finally:
+        if os.path.exists(pdf_tmp):
+            os.remove(pdf_tmp)
+
+    print(f"Result       : {'PASS' if ok else 'FAIL'}")
+    sys.exit(0 if ok else 1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="WinPrint-Linux: Non-CUPS Print & Scan Suite for Brother Printers")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
@@ -195,6 +256,10 @@ def main():
     # daemon
     p_daemon = subparsers.add_parser("daemon", help="Run background spooler & IPP server daemon")
     p_daemon.set_defaults(func=cmd_daemon)
+
+    # doctor
+    p_doctor = subparsers.add_parser("doctor", help="Verify authoritative config, PPD, rawtobr3, and F4 dry-run")
+    p_doctor.set_defaults(func=cmd_doctor)
     
     args = parser.parse_args()
     args.func(args)

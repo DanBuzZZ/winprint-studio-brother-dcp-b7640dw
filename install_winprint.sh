@@ -6,13 +6,22 @@ if [ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER}" != "root"
     exit 1
 fi
 
-FORCE_PROFILES=0
+AUTHORITATIVE=1
+FORCE_PROFILES=1
 for arg in "$@"; do
     case "$arg" in
-        --force-profiles) FORCE_PROFILES=1 ;;
+        --authoritative|--force-profiles)
+            AUTHORITATIVE=1
+            FORCE_PROFILES=1
+            ;;
+        --keep-local|--keep-profiles)
+            AUTHORITATIVE=0
+            FORCE_PROFILES=0
+            ;;
         -h|--help)
-            echo "Penggunaan: $0 [--force-profiles]"
-            echo "Menginstal WinPrint Studio v2 ke ~/.local/share/winprint (user-space, tanpa sudo)."
+            echo "Penggunaan: $0 [--authoritative | --keep-local]"
+            echo "  (default / --authoritative) Timpa config & kalibrasi dengan standar kantor terkalibrasi"
+            echo "  --keep-local                Pertahankan config.json & calibration_profiles.json lokal"
             exit 0
             ;;
         *)
@@ -77,7 +86,7 @@ if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
     if [ -d "${SRC_DIR}/scripts" ]; then
         cp -a "${SRC_DIR}/scripts/." "${TARGET_DIR}/scripts/"
     fi
-    for ppd in BRPPB7640DW.PPD Brother_B7640DW_WinPrint.ppd; do
+    for ppd in BRPPB7640DW.PPD Brother_B7640DW_WinPrint.ppd office_manifest.json; do
         if [ -f "${SRC_DIR}/${ppd}" ]; then
             cp -f "${SRC_DIR}/${ppd}" "${TARGET_DIR}/${ppd}"
         fi
@@ -85,9 +94,9 @@ if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
     if [ -f "${SRC_DIR}/calibration_profiles.json" ]; then
         if [ ! -f "${TARGET_DIR}/calibration_profiles.json" ] || [ "${FORCE_PROFILES}" -eq 1 ]; then
             cp -f "${SRC_DIR}/calibration_profiles.json" "${TARGET_DIR}/calibration_profiles.json"
-            echo "  [OK] calibration_profiles.json diperbarui"
+            echo "  [OK] calibration_profiles.json otoritatif diterapkan (+2.5 mm X, -3.8 mm Y)"
         else
-            echo "  [KEEP] calibration_profiles.json lama dipertahankan (gunakan --force-profiles untuk menimpa)"
+            echo "  [KEEP] calibration_profiles.json lama dipertahankan (--keep-local)"
         fi
     fi
     cp -f "${SRC_DIR}/install_winprint.sh" "${TARGET_DIR}/install_winprint.sh"
@@ -97,21 +106,9 @@ if [ "${SRC_DIR}" != "${TARGET_DIR}" ]; then
     fi
 fi
 
-if [ ! -f "${TARGET_DIR}/config.json" ]; then
-    cat > "${TARGET_DIR}/config.json" <<'EOF'
-{
-  "printer_ip": "",
-  "printer_name": "Brother-DCP-B7640DW",
-  "printer_model": "Brother DCP-B7640DW",
-  "default_paper": "F4",
-  "default_duplex": "long",
-  "default_toner_save": false,
-  "default_resolution": 600,
-  "auto_retry": true,
-  "intercept_to_studio": true
-}
-EOF
-    echo "  [OK] config.json awal dibuat dengan preset F4 Duplex & auto-discovery LAN"
+if [ "${AUTHORITATIVE}" -eq 1 ] || [ ! -f "${TARGET_DIR}/config.json" ]; then
+    PYTHONPATH="${TARGET_DIR}/modules" python3 -c "import winprint_spooler; winprint_spooler.apply_authoritative_manifest()"
+    echo "  [OK] config.json disinkronkan dengan office_manifest.json (F4 + Long-Edge + Safe Margin)"
 fi
 
 chmod +x "${TARGET_DIR}/install_winprint.sh"

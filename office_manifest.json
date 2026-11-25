@@ -1,0 +1,31 @@
+{
+  "manifest_version": "2.2.0",
+  "authoritative": true,
+  "printer_model": "Brother DCP-B7640DW",
+  "printer_name": "Brother-DCP-B7640DW",
+  "default_paper": "F4",
+  "default_duplex": "long",
+  "default_toner_save": false,
+  "default_resolution": 600,
+  "auto_retry": true,
+  "intercept_to_studio": true,
+  "safe_fit_to_printable": true,
+  "calibration_overrides": {
+    "Brother DCP-B7640DW": {
+      "Folio": {
+        "LONG_EDGE": {
+          "offset_x_mm": 2.5,
+          "offset_y_mm": -3.8,
+          "notes": "Authoritative office F4/Folio duplex calibration (+2.5 mm X, -3.8 mm Y)"
+        }
+      },
+      "F4": {
+        "LONG_EDGE": {
+          "offset_x_mm": 2.5,
+          "offset_y_mm": -3.8,
+          "notes": "Authoritative office F4/Folio duplex calibration (+2.5 mm X, -3.8 mm Y)"
+        }
+      }
+    }
+  }
+}

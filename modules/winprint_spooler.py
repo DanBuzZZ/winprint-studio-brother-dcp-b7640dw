@@ -25,19 +25,87 @@ import brother_snmp
 DB_DIR = os.path.expanduser("~/.local/share/winprint")
 DB_PATH = os.path.join(DB_DIR, "spool.db")
 CONFIG_PATH = os.path.join(DB_DIR, "config.json")
+OFFICE_MANIFEST_PATH = os.path.abspath(
+    os.path.join(SCRIPT_DIR, "..", "office_manifest.json")
+)
+
+AUTHORITATIVE_POLICY_KEYS = (
+    "printer_model",
+    "printer_name",
+    "default_paper",
+    "default_duplex",
+    "default_toner_save",
+    "default_resolution",
+    "auto_retry",
+    "intercept_to_studio",
+    "safe_fit_to_printable",
+)
+
+
+def load_office_manifest(manifest_path: str = OFFICE_MANIFEST_PATH) -> dict:
+    """Loads authoritative office configuration manifest if present."""
+    if os.path.isfile(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+    return {}
+
+
+def apply_authoritative_manifest(
+    config_path: str = CONFIG_PATH,
+    manifest_path: str = OFFICE_MANIFEST_PATH,
+    preserve_network_cache: bool = True,
+) -> dict:
+    """Overwrites policy keys in config.json from authoritative office_manifest.json."""
+    manifest = load_office_manifest(manifest_path)
+    existing = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = {}
+
+    merged = dict(existing) if preserve_network_cache else {}
+    for k in AUTHORITATIVE_POLICY_KEYS:
+        if k in manifest:
+            merged[k] = manifest[k]
+    if "manifest_version" in manifest:
+        merged["office_profile_version"] = manifest["manifest_version"]
+    if "printer_ip" not in merged:
+        merged["printer_ip"] = ""
+
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+    tmp_path = config_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(merged, f, indent=2)
+    os.replace(tmp_path, config_path)
+    return merged
 
 
 def get_config() -> dict:
     default_cfg = {
-        "printer_ip": "192.168.100.229",  # default fallback: Brother DCP-B7640DW (Ruang Guru)
+        "printer_ip": "",
         "printer_name": "Brother-DCP-B7640DW",
         "printer_model": "Brother DCP-B7640DW",
-        "default_paper": "A4",
-        "default_duplex": "none",
+        "default_paper": "F4",
+        "default_duplex": "long",
         "default_toner_save": False,
         "default_resolution": 600,
-        "auto_retry": True
+        "auto_retry": True,
+        "intercept_to_studio": True,
+        "safe_fit_to_printable": True,
     }
+    manifest = load_office_manifest()
+    if manifest.get("authoritative"):
+        for k in AUTHORITATIVE_POLICY_KEYS:
+            if k in manifest:
+                default_cfg[k] = manifest[k]
+
     if os.path.exists(CONFIG_PATH):
         try:
             with open(CONFIG_PATH, "r") as f:
@@ -45,6 +113,12 @@ def get_config() -> dict:
                 default_cfg.update(saved)
         except Exception:
             pass
+
+    if manifest.get("authoritative") and not default_cfg.get("keep_local_override"):
+        for k in AUTHORITATIVE_POLICY_KEYS:
+            if k in manifest:
+                default_cfg[k] = manifest[k]
+
     return default_cfg
 
 

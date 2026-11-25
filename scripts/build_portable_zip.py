@@ -20,6 +20,7 @@ STATIC_FILES = (
     "README.md",
     "LICENSE",
     "requirements.txt",
+    "office_manifest.json",
     "install_winprint.sh",
     "install_ubuntu.sh",
     "Brother_B7640DW_WinPrint.ppd",

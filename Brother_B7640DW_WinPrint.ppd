@@ -24,7 +24,7 @@
 *cupsFilter2: "image/png image/png 0 -"
 *OpenUI *PageSize/Media Size: PickOne
 *OrderDependency: 10 AnySetup *PageSize
-*DefaultPageSize: A4
+*DefaultPageSize: F4
 *PageSize F4/F4 (215 x 330 mm): "<</PageSize[612 936]>>setpagedevice"
 *PageSize 215x330mm/F4 (215 x 330 mm): "<</PageSize[612 936]>>setpagedevice"
 *PageSize 8.5x13/8.5 x 13 inch (Folio): "<</PageSize[612 936]>>setpagedevice"
@@ -40,7 +40,7 @@
 *CloseUI: *PageSize
 *OpenUI *PageRegion/Media Size: PickOne
 *OrderDependency: 10 AnySetup *PageRegion
-*DefaultPageRegion: A4
+*DefaultPageRegion: F4
 *PageRegion F4/F4 (215 x 330 mm): "<</PageSize[612 936]>>setpagedevice"
 *PageRegion 215x330mm/F4 (215 x 330 mm): "<</PageSize[612 936]>>setpagedevice"
 *PageRegion 8.5x13/8.5 x 13 inch (Folio): "<</PageSize[612 936]>>setpagedevice"
@@ -54,8 +54,8 @@
 *PageRegion Legal/US Legal: "<</PageSize[612 1008]>>setpagedevice"
 *PageRegion Letter/US Letter: "<</PageSize[612 792]>>setpagedevice"
 *CloseUI: *PageRegion
-*DefaultImageableArea: A4
-*DefaultPaperDimension: A4
+*DefaultImageableArea: F4
+*DefaultPaperDimension: F4
 *ImageableArea F4: "12.0 12.12 599.88 924.0"
 *ImageableArea 215x330mm: "12.0 12.12 599.88 924.0"
 *PaperDimension F4: "612 936"
@@ -88,9 +88,9 @@
 *CloseUI: *ColorModel
 *OpenUI *Duplex/2-Sided Printing: PickOne
 *OrderDependency: 10 AnySetup *Duplex
-*DefaultDuplex: None
+*DefaultDuplex: DuplexNoTumble
 *Duplex None/Off: "<</Duplex false>>setpagedevice"
 *Duplex DuplexNoTumble/On (Portrait): "<</Duplex true/Tumble false>>setpagedevice"
 *Duplex DuplexTumble/On (Landscape): "<</Duplex true/Tumble true>>setpagedevice"
 *CloseUI: *Duplex
-*DefaultResolution: 300dpi
+*DefaultResolution: 600dpi

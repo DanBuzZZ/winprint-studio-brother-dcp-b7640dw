@@ -367,7 +367,7 @@ def print_file_direct(ip: str, file_path: str, paper: str = "A4", duplex: str = 
                       orientation: str = "portrait", scale: float = 1.0,
                       duplex_offset_y: float = None,
                       duplex_offset_x: float = None,
-                      fit_to_printable: bool = False,
+                      fit_to_printable: bool = True,
                       backend: str = "auto",
                       printer_model: str = "Brother DCP-B7640DW",
                       paper_source: str = "auto",
@@ -491,7 +491,8 @@ def main():
     parser.add_argument("--resolution", type=int, choices=[300, 600, 1200], default=600, help="Print resolution in DPI")
     parser.add_argument("--copies", type=int, default=1, help="Number of copies")
     parser.add_argument("--scale", type=float, default=1.0, help="Content scale factor (e.g. 1.0 for 1:1 WYSIWYG)")
-    parser.add_argument("--fit-printable", action="store_true", help="Scale document proportionally inside PPD ImageableArea")
+    parser.add_argument("--fit-printable", dest="fit_printable", action="store_true", default=True, help="Scale document proportionally inside PPD ImageableArea (default)")
+    parser.add_argument("--no-fit-printable", dest="fit_printable", action="store_false", help="Disable ImageableArea safe margin fitting")
     parser.add_argument("--backend", choices=["auto", "brother_pcl", "pclxl"], default="auto", help="Rendering backend")
     args = parser.parse_args()
 

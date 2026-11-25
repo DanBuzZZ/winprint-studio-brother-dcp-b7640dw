@@ -510,6 +510,7 @@ class PrintExecutionWorker(QThread):
                 scale=self.settings.get("content_scale", 1.0),
                 duplex_offset_y=self.settings.get("duplex_offset_y", None),
                 duplex_offset_x=self.settings.get("duplex_offset_x", None),
+                fit_to_printable=self.settings.get("fit_to_printable", True),
                 printer_model=p_model,
                 paper_source=self.settings.get("paper_source", "auto"),
                 media_type=self.settings.get("media_type", "plain"),
@@ -1225,6 +1226,10 @@ class WinPrintStudio(QMainWindow):
 
         self.init_ui()
         self.init_shortcuts()
+        self._select_paper_by_code(self.cfg.get("default_paper", "F4"))
+        def_dup = str(self.cfg.get("default_duplex", "long")).lower()
+        if def_dup in ("none", "long", "short"):
+            self.select_duplex_mode(def_dup)
         self._sync_printer_ui_labels()
         self.refresh_calibration_spinboxes()
 
@@ -1767,7 +1772,12 @@ class WinPrintStudio(QMainWindow):
         slider_row.addWidget(self.lbl_scale_info, stretch=1)
         scale_box.addLayout(slider_row)
 
-        self.lbl_f4_hint = QLabel("💡 Tip: Dokumen A4 memiliki ruang sisa di lembar F4. Gunakan skala 112% agar teks & tabel memenuhi lembar F4 secara proporsional.")
+        self.chk_safe_margin = QCheckBox("Pas Margin Aman Printer (Anti-Terpotong 4.2 mm)")
+        self.chk_safe_margin.setChecked(bool(self.cfg.get("safe_fit_to_printable", True)))
+        self.chk_safe_margin.setToolTip("Menyesuaikan konten agar selalu berada di dalam batas cetak fisik PPD Brother (12 pt = 4.23 mm)")
+        scale_box.addWidget(self.chk_safe_margin)
+
+        self.lbl_f4_hint = QLabel("Tip: Gunakan skala 100% + Margin Aman untuk dokumen F4 agar tidak terpotong di tepi kiri/kanan.")
         self.lbl_f4_hint.setWordWrap(True)
         self.lbl_f4_hint.setStyleSheet("font-size: 11px; color: #94a3b8; background: #070d18; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;")
         scale_box.addWidget(self.lbl_f4_hint)
@@ -2426,19 +2436,19 @@ class WinPrintStudio(QMainWindow):
         show_hint = (paper == "F4" or tray_media == "FOLIO")
         self.lbl_f4_hint.setVisible(show_hint)
         if hasattr(self, "btn_scale_f4"):
-            self.btn_scale_f4.setEnabled(show_hint)
+            self.btn_scale_f4.setEnabled(show_hint and doc_media != "F4")
 
         if doc_media == "F4" and paper == "F4":
             self.lbl_f4_hint.setText(
-                "Dokumen berformat asli F4/Folio (215 x 330 mm). Gunakan skala 100% untuk cetak presisi 1:1."
+                "Dokumen berformat asli F4/Folio (215 x 330 mm). Skala otomatis 100% + Margin Aman agar tidak terpotong."
             )
         elif doc_media == "A4" and (paper == "F4" or tray_media == "FOLIO"):
             self.lbl_f4_hint.setText(
-                "Terdeteksi dokumen A4 pada kertas/baki F4 (Folio). Gunakan skala 112% untuk memenuhi lembar F4, atau 100% untuk ukuran asli A4."
+                "Dokumen A4 pada kertas F4 (Folio). Gunakan 100% + Margin Aman untuk pas lebar tanpa potong tepi; pakai 112% hanya jika margin dokumen lebar."
             )
         else:
             self.lbl_f4_hint.setText(
-                "Tip: Dokumen A4 memiliki ruang sisa di lembar F4. Gunakan skala 112% agar teks & tabel memenuhi lembar F4 secara proporsional."
+                "Tip: Gunakan skala 100% + Margin Aman agar seluruh sisi dan footer dokumen tetap utuh."
             )
 
     def _retire_worker(self, attr_name: str):
@@ -2768,6 +2778,8 @@ class WinPrintStudio(QMainWindow):
 
             if self.detected_doc_media:
                 self._select_paper_by_code(self.detected_doc_media)
+                if self.detected_doc_media == "F4":
+                    self.set_scale_value(100)
 
             if hasattr(self, "paper_canvas"):
                 self.paper_canvas.detected_doc_landscape = self.detected_doc_landscape
@@ -3053,6 +3065,7 @@ class WinPrintStudio(QMainWindow):
         return {
             "printer_model": self.printer_model,
             "paper": paper,
+            "fit_to_printable": self.chk_safe_margin.isChecked() if hasattr(self, "chk_safe_margin") else True,
             "paper_source": paper_source,
             "media_type": media_type,
             "binding_gutter_mm": binding_gutter_mm,

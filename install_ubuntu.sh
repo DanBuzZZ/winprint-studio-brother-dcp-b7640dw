@@ -15,19 +15,19 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 WITH_CUPS=1
-FORCE_PROFILES=1
+KEEP_LOCAL=0
 
 for arg in "$@"; do
     case "$arg" in
         --with-cups) WITH_CUPS=1 ;;
         --no-cups) WITH_CUPS=0 ;;
-        --keep-profiles) FORCE_PROFILES=0 ;;
-        --force-profiles) FORCE_PROFILES=1 ;;
+        --keep-local|--keep-profiles) KEEP_LOCAL=1 ;;
+        --authoritative|--force-profiles) KEEP_LOCAL=0 ;;
         -h|--help)
-            echo "Penggunaan: $0 [--no-cups] [--keep-profiles]"
-            echo "  (default)        Pasang paket APT, WinPrint Studio, rawtobr3 F4, & set Brother_B7640DW_WinPrint sebagai Printer Default"
+            echo "Penggunaan: $0 [--no-cups] [--keep-local]"
+            echo "  (default)        Pasang paket APT, timpa konfigurasi otoritatif F4 Duplex, rawtobr3, & set CUPS Default"
             echo "  --no-cups        Lewati pendaftaran printer virtual Ctrl+P ke CUPS"
-            echo "  --keep-profiles  Pertahankan calibration_profiles.json lama bila sudah ada"
+            echo "  --keep-local     Pertahankan config.json & calibration_profiles.json lama bila sudah ada"
             exit 0
             ;;
         *)
@@ -66,10 +66,10 @@ echo "  Memerlukan hak sudo untuk memasang paket APT Ubuntu..."
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${APT_PACKAGES[@]}"
 
-echo "[2/4] Menjalankan installer user-space (termasuk rawtobr3 F4 & profil kalibrasi)..."
-INSTALL_ARGS=()
-if [ "${FORCE_PROFILES}" -eq 1 ]; then
-    INSTALL_ARGS+=(--force-profiles)
+echo "[2/4] Menjalankan installer user-space (timpa profil otoritatif + rawtobr3 F4)..."
+INSTALL_ARGS=(--authoritative)
+if [ "${KEEP_LOCAL}" -eq 1 ]; then
+    INSTALL_ARGS=(--keep-local)
 fi
 bash "${SRC_DIR}/install_winprint.sh" "${INSTALL_ARGS[@]}"
 
@@ -97,5 +97,9 @@ else
 fi
 
 echo ""
-echo "Instalasi Ubuntu selesai! Setiap Ctrl+P kini langsung membuka WinPrint Studio dengan setelan terkalibrasi."
+echo "Menjalankan pemeriksaan mandiri (winprint doctor)..."
+"${HOME}/.local/bin/winprint" doctor || true
+
+echo ""
+echo "Instalasi Ubuntu selesai! Setiap Ctrl+P kini langsung membuka WinPrint Studio dengan setelan otoritatif F4 Duplex."
 echo "Jalankan 'winprint-tray &' atau relogin agar ikon Tray memantau status printer di panel atas."

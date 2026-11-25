@@ -38,7 +38,7 @@ Dirancang khusus untuk mengatasi kendala umum CUPS/PCL-XL pada ukuran kertas **F
 
 ## Instalasi Cepat
 
-### Ubuntu / Debian / Linux Mint (Paket Lengkap Siap Pakai)
+### Ubuntu / Debian / Linux Mint (Paket Lengkap Siap Pakai — v2.2.0 Zero-Drift Office Edition)
 
 ```bash
 git clone https://github.com/DanBuzZZ/winprint-studio-brother-dcp-b7640dw.git
@@ -51,8 +51,9 @@ cd winprint-studio-brother-dcp-b7640dw
 Secara bawaan `install_ubuntu.sh` langsung:
 - Memasang paket sistem (`ghostscript`, `poppler-utils`, `qpdf`, `PyQt6`, `pycairo`, `python3-gi-cairo`).
 - Memasang filter PCL resmi **Brother `rawtobr3` (x86_64)** yang dibundel di `drivers/b7640dw/` agar **F4/Folio Auto-Duplex tidak bergeser 50,8 mm**.
-- Menyalin profil kalibrasi siap pakai (`+2.5 mm X, -3.8 mm Y`) serta `config.json` preset F4 Duplex.
-- Mendaftarkan `Brother_B7640DW_WinPrint` ke CUPS dan **menyetelnya sebagai Printer Default `Ctrl+P`**.
+- **Authoritative Office Override (bawaan `--authoritative`)**: menerapkan [`office_manifest.json`](office_manifest.json) secara otoritatif untuk menyamakan konfigurasi global kantor (`F4` / Folio `215.9x330.2 mm`, Duplex `long`, kalibrasi otoritatif `+2.5 mm X, -3.8 mm Y`, dan **`Pas Margin Aman Printer (4.2 mm)`** aktif agar PDF F4/A4 tidak terpotong di sisi bolak-balik). Gunakan `./install_ubuntu.sh --keep-local` hanya jika ingin mempertahankan setelan lokal lama.
+- Mendaftarkan `Brother_B7640DW_WinPrint` ke CUPS dengan PPD bawaan **`DefaultPageSize: F4`** dan **`DefaultDuplex: DuplexNoTumble`** lalu **menyetelnya sebagai Printer Default `Ctrl+P`**.
+- Menjalankan diagnostik otomatis `winprint doctor` untuk memverifikasi manifest, PPD, filter `rawtobr3`, kalibrasi, serta dry-run duplex F4 sebelum selesai.
 
 ### Distro Linux Lain (Arch / Fedora — User-Space Tanpa Root)
 
